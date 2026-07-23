@@ -3,6 +3,9 @@ defmodule ChallengeWeb.Router do
 
   use Plug.Router
 
+  alias Challenge.Jobs.Error
+  alias ChallengeWeb.ErrorJSON
+
   plug(:match)
   plug(:dispatch)
 
@@ -11,11 +14,10 @@ defmodule ChallengeWeb.Router do
   end
 
   match _ do
-    ChallengeWeb.ErrorJSON.send_json(
+    ErrorJSON.send_json(
       conn,
       404,
-      "not_found",
-      "The requested resource was not found."
+      Error.new("not_found", "The requested resource was not found.")
     )
   end
 end

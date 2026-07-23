@@ -6,6 +6,8 @@ defmodule Challenge.Jobs.ValidatorTest do
   alias Challenge.Jobs.Task
   alias Challenge.Jobs.Validator
 
+  import Challenge.Jobs.TestSupport, only: [challenge_sample_payload: 0]
+
   test "valid challenge-statement sample becomes a job" do
     assert {:ok,
             %Job{
@@ -19,35 +21,34 @@ defmodule Challenge.Jobs.ValidatorTest do
                 },
                 %Task{name: "task-4", command: "rm /tmp/file1", requires: ["task-2", "task-3"]}
               ]
-            }} = Validator.validate(sample_payload())
+            }} = Validator.validate(challenge_sample_payload())
   end
 
   test "empty tasks list is valid" do
     assert Validator.validate(%{"tasks" => []}) == {:ok, %Job{tasks: []}}
   end
 
-  test "missing task requires becomes an empty list" do
-    assert {:ok, %Job{tasks: [%Task{requires: []}]}} =
-             Validator.validate(%{"tasks" => [%{"name" => "task-1", "command" => "echo one"}]})
+  test "missing or explicit empty task requires becomes an empty list" do
+    payloads = [
+      %{"tasks" => [%{"name" => "task-1", "command" => "echo one"}]},
+      %{"tasks" => [%{"name" => "task-1", "command" => "echo one", "requires" => []}]}
+    ]
+
+    for payload <- payloads do
+      assert {:ok, %Job{tasks: [%Task{requires: []}]}} = Validator.validate(payload)
+    end
   end
 
-  test "explicit empty task requires stays an empty list" do
-    assert {:ok, %Job{tasks: [%Task{requires: []}]}} =
-             Validator.validate(%{
-               "tasks" => [%{"name" => "task-1", "command" => "echo one", "requires" => []}]
-             })
-  end
+  test "top-level shape errors return invalid_payload with useful paths" do
+    cases = [
+      {[], "$"},
+      {%{}, "$.tasks"},
+      {%{"tasks" => "task-1"}, "$.tasks"}
+    ]
 
-  test "top-level payload must be an object" do
-    assert_invalid_payload(Validator.validate([]), "$")
-  end
-
-  test "top-level tasks is required" do
-    assert_invalid_payload(Validator.validate(%{}), "$.tasks")
-  end
-
-  test "top-level tasks must be a list" do
-    assert_invalid_payload(Validator.validate(%{"tasks" => "task-1"}), "$.tasks")
+    for {payload, path} <- cases do
+      assert_invalid_payload(Validator.validate(payload), path)
+    end
   end
 
   test "unknown top-level fields return invalid_payload" do
@@ -58,58 +59,35 @@ defmodule Challenge.Jobs.ValidatorTest do
             }} = Validator.validate(%{"tasks" => [], "unexpected" => true})
   end
 
-  test "each task must be an object" do
-    assert_invalid_payload(Validator.validate(%{"tasks" => ["task-1"]}), "$.tasks[0]")
+  test "task shape and required field errors return invalid_payload with useful paths" do
+    cases = [
+      {"task-1", "$.tasks[0]"},
+      {%{"command" => "echo one"}, "$.tasks[0].name"},
+      {%{"name" => 1, "command" => "echo one"}, "$.tasks[0].name"},
+      {%{"name" => "task-1"}, "$.tasks[0].command"},
+      {%{"name" => "task-1", "command" => 1}, "$.tasks[0].command"}
+    ]
+
+    for {task_payload, path} <- cases do
+      assert_invalid_payload(Validator.validate(%{"tasks" => [task_payload]}), path)
+    end
   end
 
-  test "task name is required" do
-    assert_invalid_payload(
-      Validator.validate(%{"tasks" => [%{"command" => "echo one"}]}),
-      "$.tasks[0].name"
-    )
-  end
+  test "requires errors return invalid_payload with useful paths" do
+    cases = [
+      {
+        %{"name" => "task-1", "command" => "echo one", "requires" => "task-0"},
+        "$.tasks[0].requires"
+      },
+      {
+        %{"name" => "task-1", "command" => "echo one", "requires" => [1]},
+        "$.tasks[0].requires[0]"
+      }
+    ]
 
-  test "task name must be a string" do
-    assert_invalid_payload(
-      Validator.validate(%{"tasks" => [%{"name" => 1, "command" => "echo one"}]}),
-      "$.tasks[0].name"
-    )
-  end
-
-  test "task command is required" do
-    assert_invalid_payload(
-      Validator.validate(%{"tasks" => [%{"name" => "task-1"}]}),
-      "$.tasks[0].command"
-    )
-  end
-
-  test "task command must be a string" do
-    assert_invalid_payload(
-      Validator.validate(%{"tasks" => [%{"name" => "task-1", "command" => 1}]}),
-      "$.tasks[0].command"
-    )
-  end
-
-  test "task requires must be a list when present" do
-    assert_invalid_payload(
-      Validator.validate(%{
-        "tasks" => [
-          %{"name" => "task-1", "command" => "echo one", "requires" => "task-0"}
-        ]
-      }),
-      "$.tasks[0].requires"
-    )
-  end
-
-  test "every requires entry must be a string" do
-    assert_invalid_payload(
-      Validator.validate(%{
-        "tasks" => [
-          %{"name" => "task-1", "command" => "echo one", "requires" => [1]}
-        ]
-      }),
-      "$.tasks[0].requires[0]"
-    )
+    for {task_payload, path} <- cases do
+      assert_invalid_payload(Validator.validate(%{"tasks" => [task_payload]}), path)
+    end
   end
 
   test "unknown task fields return invalid_payload" do
@@ -196,31 +174,5 @@ defmodule Challenge.Jobs.ValidatorTest do
 
   defp assert_invalid_payload(result, path) do
     assert {:error, %Error{code: "invalid_payload", details: %{"path" => ^path}}} = result
-  end
-
-  defp sample_payload do
-    %{
-      "tasks" => [
-        %{
-          "name" => "task-1",
-          "command" => "touch /tmp/file1"
-        },
-        %{
-          "name" => "task-2",
-          "command" => "cat /tmp/file1",
-          "requires" => ["task-3"]
-        },
-        %{
-          "name" => "task-3",
-          "command" => "echo 'Hello World!' > /tmp/file1",
-          "requires" => ["task-1"]
-        },
-        %{
-          "name" => "task-4",
-          "command" => "rm /tmp/file1",
-          "requires" => ["task-2", "task-3"]
-        }
-      ]
-    }
   end
 end

@@ -6,7 +6,7 @@ defmodule Challenge.Jobs.TopologicalSorterTest do
   alias Challenge.Jobs.TopologicalSorter
 
   import Challenge.Jobs.TestSupport,
-    only: [assert_dependencies_before_tasks: 1, job: 1, names: 1, task: 1, task: 2, task: 3]
+    only: [dependency_violations: 1, job: 1, names: 1, task: 1, task: 2, task: 3]
 
   test "empty job returns an empty ordered list" do
     assert sort_tasks([]) == {:ok, []}
@@ -74,7 +74,7 @@ defmodule Challenge.Jobs.TopologicalSorterTest do
 
     assert {:ok, ordered_tasks} = sort_tasks(tasks)
     assert names(ordered_tasks) == ["build", "test-api", "test-ui", "package", "publish"]
-    assert_dependencies_before_tasks(ordered_tasks)
+    assert dependency_violations(ordered_tasks) == []
   end
 
   test "dense acyclic graph uses deterministic request-order tie-breaking" do
@@ -106,7 +106,7 @@ defmodule Challenge.Jobs.TopologicalSorterTest do
              "deploy"
            ]
 
-    assert_dependencies_before_tasks(ordered_tasks)
+    assert dependency_violations(ordered_tasks) == []
   end
 
   test "self-dependency returns dependency_cycle" do
@@ -171,7 +171,7 @@ defmodule Challenge.Jobs.TopologicalSorterTest do
     ]
 
     assert {:ok, ordered_tasks} = sort_tasks(tasks)
-    assert_dependencies_before_tasks(ordered_tasks)
+    assert dependency_violations(ordered_tasks) == []
   end
 
   defp sorted_names(tasks) do

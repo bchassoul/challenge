@@ -42,6 +42,7 @@ Phoenix would be more framework than this needs. There is one endpoint, one work
 HTTP request
   -> ChallengeWeb.Router
   -> ChallengeWeb.JobController
+  -> ChallengeWeb.ResponseNegotiator
   -> Challenge.Jobs.OrderJob
   -> Challenge.Jobs.Validator
   -> Challenge.Jobs.DependencyGraph
@@ -69,6 +70,10 @@ The request body is the challenge JSON payload. The `Accept` header chooses the 
 - `text/x-shellscript` returns a bash script.
 - Missing `Accept` or `*/*` defaults to JSON.
 - Unsupported response types return `406 not_acceptable`.
+
+The request `Content-Type` must be `application/json`. Parameters such as
+`application/json; charset=utf-8` are accepted. Missing or unsupported request
+content types return `415 unsupported_media_type`.
 
 Unknown paths and unsupported methods return the same `404 not_found` JSON error envelope. The route exists only as far as the public API says it exists; the domain layer does not need to know about routing failures.
 
@@ -172,6 +177,7 @@ Public error codes:
 - `unknown_dependency`
 - `dependency_cycle`
 - `not_acceptable`
+- `unsupported_media_type`
 - `not_found`
 
 Responses should not expose stack traces, module names, raw exception messages, or internal graph details.
@@ -186,6 +192,7 @@ Core coverage:
 - Sorter handles chains, branches, independent tasks, shared dependencies, and cycles.
 - Sorter preserves original request order when more than one task is ready.
 - Script rendering preserves command strings and includes the shebang.
-- HTTP tests cover JSON output, shell output, content negotiation, malformed JSON, validation errors, and route errors.
+- HTTP tests cover JSON output, shell output, request content-type validation, content negotiation, malformed JSON, oversized bodies, validation errors, and route errors.
+- Response negotiation tests cover quality values, wildcards, explicit exclusions, casing, and invalid media ranges.
 
 The key invariant: for every ordered acyclic job, each dependency appears before the task that requires it.

@@ -5,15 +5,13 @@ defmodule Challenge.Jobs.DomainTypesTest do
   alias Challenge.Jobs.Job
   alias Challenge.Jobs.Task
 
-  test "error can be built with stable code, message, and default empty details" do
+  test "error carries stable code, message, and optional public details" do
     assert Error.new("invalid_payload", "Invalid request payload") == %Error{
              code: "invalid_payload",
              message: "Invalid request payload",
              details: %{}
            }
-  end
 
-  test "error can carry useful details" do
     assert Error.new("unknown_dependency", "Unknown dependency", %{
              "task" => "task-2",
              "dependency" => "task-1"
@@ -24,17 +22,14 @@ defmodule Challenge.Jobs.DomainTypesTest do
            }
   end
 
-  test "task carries only domain task data" do
+  test "task carries only domain task data and defaults requires" do
     task = %Task{name: "task-1", command: "touch /tmp/file1", requires: []}
 
     assert struct_keys(task) == MapSet.new([:command, :name, :requires])
-  end
-
-  test "task defaults requires to an empty list" do
     assert %Task{name: "task-1", command: "touch /tmp/file1"}.requires == []
   end
 
-  test "job carries only domain job data" do
+  test "job and errors do not carry HTTP response data" do
     job = %Job{
       tasks: [
         %Task{name: "task-1", command: "touch /tmp/file1"},
@@ -43,9 +38,7 @@ defmodule Challenge.Jobs.DomainTypesTest do
     }
 
     assert struct_keys(job) == MapSet.new([:tasks])
-  end
 
-  test "domain errors do not carry HTTP response data" do
     error = Error.new("dependency_cycle", "Dependency cycle detected")
 
     assert struct_keys(error) == MapSet.new([:code, :details, :message])

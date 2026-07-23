@@ -1,7 +1,7 @@
 defmodule Challenge.ApplicationTest do
   use ExUnit.Case, async: true
 
-  test "does not start Cowboy in test" do
+  test "Cowboy child specs match the application environment" do
     assert Application.fetch_env!(:challenge, :environment) == :test
     assert Challenge.Application.child_specs(:test) == []
 
@@ -11,9 +11,7 @@ defmodule Challenge.ApplicationTest do
       |> Enum.map(fn {id, _pid, _type, _modules} -> id end)
 
     refute Plug.Cowboy in children
-  end
 
-  test "starts Cowboy outside test" do
     port = Application.fetch_env!(:challenge, :http_port)
 
     assert [{Plug.Cowboy, opts}] = Challenge.Application.child_specs(:dev)
