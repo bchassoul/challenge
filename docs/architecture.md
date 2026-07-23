@@ -31,7 +31,7 @@ Commands are plain strings here. The app sorts and renders them; it does not int
 ## Stack
 
 - `Plug` and `Cowboy` for HTTP.
-- Erlang/OTP `:json` for JSON encoding and decoding.
+- Elixir `JSON` for JSON encoding and decoding.
 - `ExUnit` for tests.
 
 Phoenix would be more framework than this needs. There is one endpoint, one workflow, and two response formats, so `Plug` keeps the moving parts visible.

@@ -1,18 +1,5 @@
 defmodule Challenge do
   @moduledoc """
-  Documentation for `Challenge`.
+  Dependency-aware job ordering service.
   """
-
-  @doc """
-  Hello world.
-
-  ## Examples
-
-      iex> Challenge.hello()
-      :world
-
-  """
-  def hello do
-    :world
-  end
 end
