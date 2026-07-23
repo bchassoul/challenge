@@ -10,6 +10,7 @@ defmodule Challenge.Application do
     Supervisor.start_link(children, strategy: :one_for_one, name: Challenge.Supervisor)
   end
 
+  @doc false
   def child_specs(:test), do: []
 
   def child_specs(_environment) do
