@@ -39,11 +39,12 @@ The sorter tracks each task's unmet dependency count. Tasks with zero unmet depe
 
 When several tasks are ready, we choose the one that appeared earliest in the original request. That stable tie-breaker is handled by an ordered ready set, not by replacing Kahn's algorithm.
 
-In Elixir/Erlang, Erlang/OTP's `:gb_sets` can store `{input_index, task_name}` pairs for this without adding an external dependency. Its insert, lookup, and delete operations are logarithmic. The Erlang docs also point out that ordered-list sets can be faster for some similar-sized set operations, so this is not meant as a blanket performance claim. Here, `:gb_sets` is mainly a small standard-library way to keep the ready set ordered while tasks are added and removed.
+In Elixir, Erlang/OTP's `:gb_sets` can store `{input_index, task_name}` pairs for this without adding an external dependency. This is the Erlang standard-library module, called directly from Elixir as `:gb_sets`; it is not the external [`sets`](https://hexdocs.pm/sets/api-reference.html) Hex package. For this challenge, I would rather use the standard library and avoid unnecessary dependencies.
 
 References:
 
 - [`:gb_sets`](https://www.erlang.org/doc/apps/stdlib/gb_sets.html)
+- [`sets`](https://hexdocs.pm/sets/api-reference.html)
 - [`:graph`](https://www.erlang.org/doc/apps/stdlib/graph.html)
 
 ## Options Considered
