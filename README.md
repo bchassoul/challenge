@@ -2,7 +2,7 @@
 
 An Elixir implementation of the CraftingSoftware challenge.
 
-See [docs/challenge-statement.md](docs/challenge-statement.md) for the
+See [docs/challenge-statement.pdf](docs/challenge-statement.pdf) for the
 challenge details, and [docs/architecture.md](docs/architecture.md)
 for the implementation design.
 
